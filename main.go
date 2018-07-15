@@ -51,12 +51,16 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //This is basically the X-Forwarded-For header from Cloudfront, and is our best
     //indicator for who called this
     //TODO: Make sure the body and the SourceIP match
+    body := string(request.RequestContext.Body)
 	caller := string(request.RequestContext.Identity.SourceIP)
     hostedZone := string("Z1N0R6CQ9D3SXO")
     targetURL := string("home.christiannet.info")
 
     //Here's where we actually make the update to R53
     result, err := updateR53(caller, hostedZone, targetURL)
+
+    //Print out our body for testing purposes
+    fmt.Println(body)
 
     //Always print the result
     fmt.Println(result)
