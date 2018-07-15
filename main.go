@@ -60,10 +60,10 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     result, err := updateR53(caller, hostedZone, targetURL)
 
     //Print out our body for testing purposes
-    fmt.Println(body)
+    fmt.Println("Body from the request: %+v", body)
 
     //Always print the result
-    fmt.Println(result)
+    fmt.Printf("Result of the call %+v", result)
 
     //If we get an error, just do a general 500 and send the problem to the caller
     if err != nil {
