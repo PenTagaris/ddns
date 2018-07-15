@@ -52,8 +52,8 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //indicator for who called this
     //TODO: Make sure the body and the SourceIP match
 	caller := string(request.RequestContext.Identity.SourceIP)
-    hostedZone := string("")
-    targetURL := string("")
+    hostedZone := string("Z1N0R6CQ9D3SXO")
+    targetURL := string("home.christiannet.info")
 
     //Here's where we actually make the update to R53
     result, err := updateR53(caller, hostedZone, targetURL)
