@@ -67,11 +67,9 @@ func parseBody(body []byte) (string, string, string, error) {
 
 //TODO: Implement Error Types
 func errorHandler (statusCode int, errorString string) (events.APIGatewayProxyResponse, error) {
-    //This gets called when we handle an error. It would seem that the AWS SDK handles the error
-    //type as an error in the code, as opposed to a client error.
-    //As such, it short circuits the response with a 502, and the caller doesn't get a response.
-    //Therefore, set the error return to nil so events.APIGatewayProxyResponse 
-    //actually gets back to the caller.
+    //This gets called when we can handle an error. When the SDK encounters an actual error, it assumes
+    //there's something broken code-wise, as opposed to input. Since we can handle input errors, set error
+    //to nil so the response gets back to the caller.
     return events.APIGatewayProxyResponse{
         StatusCode: int(statusCode),
         Body:       string(errorString),
