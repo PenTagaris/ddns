@@ -85,7 +85,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     if (request.RequestContext.Identity.SourceIP == "") || (request.Body == "") {
         //return errorHandler(500, "Not enough data to update")
         return events.APIGatewayProxyResponse{
-            StatusCode: 500,
+            StatusCode: 400,
             Body:       string("Not enough data to update"),
             Headers:    map[string]string{
                 "Content-Type": "text/html",
