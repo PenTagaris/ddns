@@ -122,8 +122,8 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     }
 
 	return events.APIGatewayProxyResponse{
-		StatusCode: 200,
-		Body:       string("This API endpoint was called from " + caller),
+		StatusCode: 202,
+		Body:       string("Call to update accepted"),
 		Headers: map[string]string{
 			"Content-Type": "text/html",
 		},
