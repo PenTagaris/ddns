@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
     "encoding/json"
+    "errors"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -66,11 +67,11 @@ func parseBody(body []byte) (string, string, string, error) {
 }
 
 //Lots of errors to deal with, maybe need a custom handler?
-func errorHandler (statusCode int, errorText string, err error) (events.APIGatewayProxyResponse) {
+func errorHandler (statusCode int, err error) (events.APIGatewayProxyResponse) {
     //TODO: give more info, maybe better headers?
     return events.APIGatewayProxyResponse{
         StatusCode: statusCode,
-        Body:       errorText + err.Error(),
+        Body:       err.Error(),
         Headers: map[string]string{
             "Content-Type": "text/html",
         },
@@ -82,10 +83,11 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //We need a Body and a Source IP. If we don't have both, fail out
     if (request.RequestContext.Identity.SourceIP == "") || (request.Body == "") {
-        return errorHandler(500, "Not enough data", nil), nil
+        err := errors.New("Not enough data to update")
+        return errorHandler(500, err), err
     }
     //Print out our body for logging purposes
-    fmt.Printf("Body from the request: %+v", request.Body)
+    fmt.Printf("Body from the request: %+v\n", request.Body)
 
     //Caller is the X-Forwarded-For header from Cloudfront 
     //request.Body should be json, so byte encode it here and let the parser do its thing
@@ -94,23 +96,24 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //Break if we get an error while parsing
     if parseErr != nil {
-       return errorHandler(500, "Parsing Error", parseErr), parseErr
+       return errorHandler(500, parseErr), parseErr
 
     //Also break if the X-F-F header doesn't match newIP
     } else if caller != newIP {
-	    return errorHandler(500, "Failed to Validate", nil), nil
+        err := errors.New("Failed to Validate")
+	    return errorHandler(500, err), err
     }
 
     //Here's where we actually make the update to R53
     result, err := updateR53(newIP, hostedZone, targetURL)
 
     //Log the result
-    fmt.Printf("Result of the call %+v", result)
+    fmt.Printf("Result of the call %+v\n", result)
 
     //If we get an error from the update itself, 
     //just do a general 500 and send the problem to the caller
     if err != nil {
-        return errorHandler(500, "Update Failed", err), err
+        return errorHandler(500, err), err
     }
 
 	return events.APIGatewayProxyResponse{
