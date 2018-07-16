@@ -70,9 +70,9 @@ func parseBody(body []byte) (string, string, string, error) {
 func errorHandler (statusCode int, errorString string) (events.APIGatewayProxyResponse, error) {
     //TODO: give more info, maybe better headers?
     return events.APIGatewayProxyResponse{
-        StatusCode: statusCode,
-        Body:       errorString,
-        Headers: map[string]string{
+        StatusCode: int(statusCode),
+        Body:       string(errorString),
+        Headers:    map[string]string{
             "Content-Type": "text/html",
         },
     }, errors.New(errorString)
