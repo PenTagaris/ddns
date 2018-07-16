@@ -50,6 +50,18 @@ func updateR53(newIP string, hostedZone string, targetURL string) (*route53.Chan
 	}
 	return result, err
 }
+//Custom Error handler since we have more than a few errors that can pop up
+func ErrorHandler(errorText string, statusCode int, err error) (events.APIGatewayProxyResponse) {
+    //TODO: More info back to the caller, potentially more headers?
+
+    return events.APIGatewayProxyResponse{
+        StatusCode: statusCode,
+        Body:       errorText + err.Error(),
+        Headers: map[string]string{
+            "Content-Type": "text/html",
+        },
+    }
+}
 
 func ParseBody(body []byte) (string, string, string, error) {
     //Data is going to be our json struct
@@ -109,21 +121,15 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //Here's where we actually make the update to R53
     result, err := updateR53(newIP, hostedZone, targetURL)
 
-    //Print out our body for logging purposes
-    fmt.Println("Body from the request: %+v", body)
+    //Print out our body for testing purposes
+    fmt.Printf("Body from the request: %+v", body)
 
     //Log the result
     fmt.Printf("Result of the call %+v", result)
 
     //If we get an error, just do a general 500 and send the problem to the caller
     if err != nil {
-	    return events.APIGatewayProxyResponse{
-		    StatusCode: 500,
-            Body:       string("Error: " + err.Error()),
-		    Headers: map[string]string{
-			    "Content-Type": "text/html",
-		    },
-	    }, err
+        return ErrorHandler("Update Failed", 500, err), err
     }
 
 	return events.APIGatewayProxyResponse{
