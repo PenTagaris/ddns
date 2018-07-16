@@ -80,6 +80,10 @@ func ErrorHandler (statusCode int, errorText string, err error) (events.APIGatew
 // is processed, it returns an Amazon API Gateway response object to AWS Lambda
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
+    //We need a Body and a Source IP. If we don't have both, fail out
+    if (request.RequestContext.Identity.SourceIP == "") || (request.Body == "") {
+        return ErrorHandler(500, "Not enough data", nil), nil
+    }
     //Caller is the X-Forwarded-For header from Cloudfront 
     //request.Body should be json, so byte encode it here and let the parser do its thing
 	caller := string(request.RequestContext.Identity.SourceIP)
@@ -88,7 +92,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //Break if we get an error while parsing
     if parseErr != nil {
         return ErrorHandler(500, "Parsing Error", parseErr), parseErr
- 
+
     //Also break if the X-F-F header doesn't match newIP
     } else if caller != newIP {
 	    return ErrorHandler(500, "Failed to Validate", nil), nil
