@@ -78,6 +78,7 @@ func errorHandler (statusCode int, errorString string) (events.APIGatewayProxyRe
     }, errors.New(errorString)
 }
 
+//Handler is where the Lambda magic happens
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
     //We need a Body and a Source IP. If we don't have both, fail out
