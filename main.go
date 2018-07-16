@@ -57,7 +57,7 @@ func parseBody(body []byte) (string, string, string, error) {
     data := requestBody{}
 
     //Unmarshal the string to our json struct, and fail out if need be
-    err := json.Unmarshal(body, data)
+    err := json.Unmarshal(body, &data)
     if err != nil {
         return "", "", "", err
     }
