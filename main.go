@@ -74,7 +74,7 @@ func ErrorHandler (errorText string, statusCode int, err error) (events.APIGatew
         Headers: map[string]string{
             "Content-Type": "text/html",
         },
-    }, err
+    }
 }
 // Handler is executed by AWS Lambda in the main function. Once the request
 // is processed, it returns an Amazon API Gateway response object to AWS Lambda
@@ -83,7 +83,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //Caller is the X-Forwarded-For header from Cloudfront 
     //request.Body should be json, so byte encode it here and let the parser do its thing
 	caller := string(request.RequestContext.Identity.SourceIP)
-    hostedZone, targetURL, newIP, parseErr := ParseBody([]byte(request.Body))
+    newIP, hostedZone, targetURL, parseErr := ParseBody([]byte(request.Body))
 
     //Break if we get an error while parsing
     if parseErr != nil {
@@ -99,7 +99,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     else if caller != newIP {
 	    return events.APIGatewayProxyResponse{
 		    StatusCode: 500,
-            Body:       string("Error: Failed to Validate",
+            Body:       string("Error: Failed to Validate"),
 		    Headers: map[string]string{
 			    "Content-Type": "text/html",
 		    },
