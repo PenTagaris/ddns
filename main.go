@@ -101,7 +101,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     newIP, hostedZone, targetURL, parseErr := parseBody([]byte(request.Body))
 
     //error out if we don't have all three defined
-    if (newIP == "") ||  (hostedZone == "") || (targetURL = "") {
+    if (newIP == "") ||  (hostedZone == "") || (targetURL == "") {
         return errorHandler(400, "Not enough data to update")
     }
     //Break if we get an error while parsing
