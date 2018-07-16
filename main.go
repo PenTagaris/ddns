@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+    "encoding/json"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -9,6 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 )
+
+type RequestBody struct {
+    NewIP string `json:"ip_address"`
+    HostedZone string `json:"hosted_zone"`
+    TargetURL string `json:"target_url"`
+}
 
 func updateR53(newIP string, hostedZone string, targetURL string) (*route53.ChangeResourceRecordSetsOutput, error) {
 	// New service handler
@@ -44,25 +51,68 @@ func updateR53(newIP string, hostedZone string, targetURL string) (*route53.Chan
 	return result, err
 }
 
+func ParseBody(body []byte) (string, string, string, error) {
+    //Data is going to be our json struct
+    data := RequestBody{}
+
+    //Unmarshal the string to our json struct, and fail out if need be
+    err := json.Unmarshal(body, data)
+    if err != nil {
+        return nil, nil, nil, err
+    }
+
+    //else, return our data
+    return data.NewIP, data.HostedZone, data.TargetURL, err
+}
+
+//Lots of errors to deal with, maybe need a custom handler?
+func ErrorHandler (errorText string, statusCode int, err error) (events.APIGatewayProxyResponse) {
+    //TODO: give more info
+    return events.APIGatewayProxyResponse{
+        StatusCode: statusCode,
+        Body:       errorText + err.Error(),
+        Headers: map[string]string{
+            "Content-Type": "text/html",
+        },
+    }, err
+}
 // Handler is executed by AWS Lambda in the main function. Once the request
 // is processed, it returns an Amazon API Gateway response object to AWS Lambda
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
-    //This is basically the X-Forwarded-For header from Cloudfront, and is our best
-    //indicator for who called this
-    //TODO: Make sure the body and the SourceIP match
-    body := string(request.Body)
+    //Caller is the X-Forwarded-For header from Cloudfront 
+    //request.Body should be json, so byte encode it here and let the parser do its thing
 	caller := string(request.RequestContext.Identity.SourceIP)
-    hostedZone := string("Z1N0R6CQ9D3SXO")
-    targetURL := string("home.christiannet.info")
+    hostedZone, targetURL, newIP, parseErr := ParseBody([]byte(request.Body))
+
+    //Break if we get an error while parsing
+    if parseErr != nil {
+	    return events.APIGatewayProxyResponse{
+		    StatusCode: 500,
+            Body:       string("Error: " + err.Error()),
+		    Headers: map[string]string{
+			    "Content-Type": "text/html",
+		    },
+	    }, err
+    }
+    //Also break if the X-F-F header doesn't match newIP
+    else if caller != newIP {
+	    return events.APIGatewayProxyResponse{
+		    StatusCode: 500,
+            Body:       string("Error: Failed to Validate",
+		    Headers: map[string]string{
+			    "Content-Type": "text/html",
+		    },
+	    }, err
+    }
 
     //Here's where we actually make the update to R53
-    result, err := updateR53(caller, hostedZone, targetURL)
+    result, err := updateR53(newIP, hostedZone, targetURL)
 
-    //Print out our body for testing purposes
+    //Print out our body for logging purposes
     fmt.Println("Body from the request: %+v", body)
 
-    //Always print the result
+    //Log the result
     fmt.Printf("Result of the call %+v", result)
 
     //If we get an error, just do a general 500 and send the problem to the caller
@@ -75,7 +125,6 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		    },
 	    }, err
     }
-
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
