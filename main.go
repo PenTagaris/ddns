@@ -50,18 +50,6 @@ func updateR53(newIP string, hostedZone string, targetURL string) (*route53.Chan
 	}
 	return result, err
 }
-//Custom Error handler since we have more than a few errors that can pop up
-func ErrorHandler(errorText string, statusCode int, err error) (events.APIGatewayProxyResponse) {
-    //TODO: More info back to the caller, potentially more headers?
-
-    return events.APIGatewayProxyResponse{
-        StatusCode: statusCode,
-        Body:       errorText + err.Error(),
-        Headers: map[string]string{
-            "Content-Type": "text/html",
-        },
-    }
-}
 
 func ParseBody(body []byte) (string, string, string, error) {
     //Data is going to be our json struct
@@ -70,7 +58,7 @@ func ParseBody(body []byte) (string, string, string, error) {
     //Unmarshal the string to our json struct, and fail out if need be
     err := json.Unmarshal(body, data)
     if err != nil {
-        return nil, nil, nil, err
+        return "", "", "", err
     }
 
     //else, return our data
@@ -78,8 +66,8 @@ func ParseBody(body []byte) (string, string, string, error) {
 }
 
 //Lots of errors to deal with, maybe need a custom handler?
-func ErrorHandler (errorText string, statusCode int, err error) (events.APIGatewayProxyResponse) {
-    //TODO: give more info
+func ErrorHandler (statusCode int, errorText string, err error) (events.APIGatewayProxyResponse) {
+    //TODO: give more info, maybe better headers?
     return events.APIGatewayProxyResponse{
         StatusCode: statusCode,
         Body:       errorText + err.Error(),
@@ -99,23 +87,11 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //Break if we get an error while parsing
     if parseErr != nil {
-	    return events.APIGatewayProxyResponse{
-		    StatusCode: 500,
-            Body:       string("Error: " + err.Error()),
-		    Headers: map[string]string{
-			    "Content-Type": "text/html",
-		    },
-	    }, err
+        return ErrorHandler(500, "Parsing Error", err), err
     }
     //Also break if the X-F-F header doesn't match newIP
     else if caller != newIP {
-	    return events.APIGatewayProxyResponse{
-		    StatusCode: 500,
-            Body:       string("Error: Failed to Validate"),
-		    Headers: map[string]string{
-			    "Content-Type": "text/html",
-		    },
-	    }, err
+	    return ErrorHandler(500, "Failed to Validate", err), err
     }
 
     //Here's where we actually make the update to R53
@@ -127,9 +103,10 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //Log the result
     fmt.Printf("Result of the call %+v", result)
 
-    //If we get an error, just do a general 500 and send the problem to the caller
+    //If we get an error from the update itself, 
+    //just do a general 500 and send the problem to the caller
     if err != nil {
-        return ErrorHandler("Update Failed", 500, err), err
+        return ErrorHandler(500, "Update Failed", err), err
     }
 
 	return events.APIGatewayProxyResponse{
