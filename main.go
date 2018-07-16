@@ -53,7 +53,7 @@ func updateR53(newIP string, hostedZone string, targetURL string) (*route53.Chan
 
 func parseBody(body []byte) (string, string, string, error) {
     //Data is going to be our json struct
-    data := RequestBody{}
+    data := requestBody{}
 
     //Unmarshal the string to our json struct, and fail out if need be
     err := json.Unmarshal(body, data)
@@ -82,7 +82,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //We need a Body and a Source IP. If we don't have both, fail out
     if (request.RequestContext.Identity.SourceIP == "") || (request.Body == "") {
-        return ErrorHandler(500, "Not enough data", nil), nil
+        return errorHandler(500, "Not enough data", nil), nil
     }
     //Print out our body for logging purposes
     fmt.Printf("Body from the request: %+v", request.Body)
@@ -90,15 +90,15 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //Caller is the X-Forwarded-For header from Cloudfront 
     //request.Body should be json, so byte encode it here and let the parser do its thing
 	caller := string(request.RequestContext.Identity.SourceIP)
-    newIP, hostedZone, targetURL, parseErr := ParseBody([]byte(request.Body))
+    newIP, hostedZone, targetURL, parseErr := parseBody([]byte(request.Body))
 
     //Break if we get an error while parsing
     if parseErr != nil {
-       return ErrorHandler(500, "Parsing Error", parseErr), parseErr
+       return errorHandler(500, "Parsing Error", parseErr), parseErr
 
     //Also break if the X-F-F header doesn't match newIP
     } else if caller != newIP {
-	    return ErrorHandler(500, "Failed to Validate", nil), nil
+	    return errorHandler(500, "Failed to Validate", nil), nil
     }
 
     //Here's where we actually make the update to R53
@@ -110,7 +110,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //If we get an error from the update itself, 
     //just do a general 500 and send the problem to the caller
     if err != nil {
-        return ErrorHandler(500, "Update Failed", err), err
+        return errorHandler(500, "Update Failed", err), err
     }
 
 	return events.APIGatewayProxyResponse{
