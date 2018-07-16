@@ -43,6 +43,18 @@ func updateR53(newIP string, hostedZone string, targetURL string) (*route53.Chan
 	}
 	return result, err
 }
+//Custom Error handler since we have more than a few errors that can pop up
+func ErrorHandler(errorText string, statusCode int, err error) (events.APIGatewayProxyResponse) {
+    //TODO: More info back to the caller, potentially more headers?
+
+    return events.APIGatewayProxyResponse{
+        StatusCode: statusCode,
+        Body:       errorText + err.Error(),
+        Headers: map[string]string{
+            "Content-Type": "text/html",
+        },
+    }
+}
 
 // Handler is executed by AWS Lambda in the main function. Once the request
 // is processed, it returns an Amazon API Gateway response object to AWS Lambda
@@ -67,15 +79,8 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //If we get an error, just do a general 500 and send the problem to the caller
     if err != nil {
-	    return events.APIGatewayProxyResponse{
-		    StatusCode: 500,
-            Body:       string("Error: " + err.Error()),
-		    Headers: map[string]string{
-			    "Content-Type": "text/html",
-		    },
-	    }, err
+        return ErrorHandler("Update Failed", 500, err), err
     }
-
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
