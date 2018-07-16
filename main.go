@@ -84,7 +84,9 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //We need a Body and a Source IP. If we don't have both, fail out
     if (request.RequestContext.Identity.SourceIP == "") || (request.Body == "") {
         err := errors.New("Not enough data to update")
-        return errorHandler(500, err), err
+        fmt.Println(err.Error())
+        fail := errorHandler(500, err)
+        return fail, err
     }
     //Print out our body for logging purposes
     fmt.Printf("Body from the request: %+v\n", request.Body)
