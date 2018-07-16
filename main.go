@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53"
 )
 
-type RequestBody struct {
+type requestBody struct {
     NewIP string `json:"ip_address"`
     HostedZone string `json:"hosted_zone"`
     TargetURL string `json:"target_url"`
@@ -51,7 +51,7 @@ func updateR53(newIP string, hostedZone string, targetURL string) (*route53.Chan
 	return result, err
 }
 
-func ParseBody(body []byte) (string, string, string, error) {
+func parseBody(body []byte) (string, string, string, error) {
     //Data is going to be our json struct
     data := RequestBody{}
 
@@ -66,7 +66,7 @@ func ParseBody(body []byte) (string, string, string, error) {
 }
 
 //Lots of errors to deal with, maybe need a custom handler?
-func ErrorHandler (statusCode int, errorText string, err error) (events.APIGatewayProxyResponse) {
+func errorHandler (statusCode int, errorText string, err error) (events.APIGatewayProxyResponse) {
     //TODO: give more info, maybe better headers?
     return events.APIGatewayProxyResponse{
         StatusCode: statusCode,
@@ -84,6 +84,9 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     if (request.RequestContext.Identity.SourceIP == "") || (request.Body == "") {
         return ErrorHandler(500, "Not enough data", nil), nil
     }
+    //Print out our body for logging purposes
+    fmt.Printf("Body from the request: %+v", request.Body)
+
     //Caller is the X-Forwarded-For header from Cloudfront 
     //request.Body should be json, so byte encode it here and let the parser do its thing
 	caller := string(request.RequestContext.Identity.SourceIP)
@@ -91,7 +94,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //Break if we get an error while parsing
     if parseErr != nil {
-        return ErrorHandler(500, "Parsing Error", parseErr), parseErr
+       return ErrorHandler(500, "Parsing Error", parseErr), parseErr
 
     //Also break if the X-F-F header doesn't match newIP
     } else if caller != newIP {
@@ -100,9 +103,6 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //Here's where we actually make the update to R53
     result, err := updateR53(newIP, hostedZone, targetURL)
-
-    //Print out our body for testing purposes
-    fmt.Printf("Body from the request: %+v", request.Body)
 
     //Log the result
     fmt.Printf("Result of the call %+v", result)
