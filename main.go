@@ -67,15 +67,15 @@ func parseBody(body []byte) (string, string, string, error) {
 }
 
 //TODO: Implement Error Types
-func errorHandler (statusCode int, errorString string) (events.APIGatewayProxyResponse, error) {
+func errorHandler (statusCode int, errorBtring string) (events.APIGatewayProxyResponse, error) {
     //TODO: give more info, maybe better headers?
     return events.APIGatewayProxyResponse{
         StatusCode: int(statusCode),
-        Body:       string(errorString),
+        Body:       string(errorBtring),
         Headers:    map[string]string{
             "Content-Type": "text/html",
         },
-    }, errors.New(errorString)
+    }, errors.New("My very own " + errorBtring)
 }
 
 //Handler is where the Lambda magic happens
@@ -83,8 +83,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //We need a Body and a Source IP. If we don't have both, fail out
     if (request.RequestContext.Identity.SourceIP == "") || (request.Body == "") {
-        updateErr := errors.New("Not enough data to update")
-        return errorHandler(500, updateErr.Error())
+        return errorHandler(500, "Not enough data to update")
     }
     //Print out our body for logging purposes
     fmt.Printf("Body from the request: %+v\n", request.Body)
