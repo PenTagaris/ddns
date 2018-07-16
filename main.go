@@ -90,7 +90,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
             Headers:    map[string]string{
                 "Content-Type": "text/html",
             },
-        }, errors.New("No data, biotch")
+        }, nil
     }
     //Print out our body for logging purposes
     fmt.Printf("Body from the request: %+v\n", request.Body)
@@ -100,6 +100,10 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	caller := string(request.RequestContext.Identity.SourceIP)
     newIP, hostedZone, targetURL, parseErr := parseBody([]byte(request.Body))
 
+    //error out if we don't have all three defined
+    if (newIP == "") ||  (hostedZone == "") || (targetURL = "") {
+        return errorHandler(400, "Not enough data to update")
+    }
     //Break if we get an error while parsing
     if parseErr != nil {
        return errorHandler(500, parseErr.Error())
