@@ -90,7 +90,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
             Headers:    map[string]string{
                 "Content-Type": "text/html",
             },
-        }, errors.New("No data, biotch!")
+        }, errors.New("No data, biotch")
     }
     //Print out our body for logging purposes
     fmt.Printf("Body from the request: %+v\n", request.Body)
