@@ -111,7 +111,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     result, err := updateR53(newIP, hostedZone, targetURL)
 
     //Log the result
-    fmt.Printf("Result of the call %+v\n", result)
+    fmt.Println(result)
 
     //If we get an error from the update itself, 
     //just do a general 500 and send the problem to the caller
