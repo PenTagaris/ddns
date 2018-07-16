@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
     "encoding/json"
-    "errors"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
