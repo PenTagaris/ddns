@@ -66,27 +66,24 @@ func parseBody(body []byte) (string, string, string, error) {
     return data.NewIP, data.HostedZone, data.TargetURL, err
 }
 
-//Lots of errors to deal with, maybe need a custom handler?
-func errorHandler (statusCode int, err error) (events.APIGatewayProxyResponse) {
+//TODO: Implement Error Types
+func errorHandler (statusCode int, errorString string) (events.APIGatewayProxyResponse, error) {
     //TODO: give more info, maybe better headers?
     return events.APIGatewayProxyResponse{
         StatusCode: statusCode,
-        Body:       err.Error(),
+        Body:       errorString,
         Headers: map[string]string{
             "Content-Type": "text/html",
         },
-    }
+    }, errors.New(errorString)
 }
-// Handler is executed by AWS Lambda in the main function. Once the request
-// is processed, it returns an Amazon API Gateway response object to AWS Lambda
+
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
     //We need a Body and a Source IP. If we don't have both, fail out
     if (request.RequestContext.Identity.SourceIP == "") || (request.Body == "") {
-        err := errors.New("Not enough data to update")
-        fmt.Println(err.Error())
-        fail := errorHandler(500, err)
-        return fail, err
+        updateErr := errors.New("Not enough data to update")
+        return errorHandler(500, updateErr.Error())
     }
     //Print out our body for logging purposes
     fmt.Printf("Body from the request: %+v\n", request.Body)
@@ -98,12 +95,11 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //Break if we get an error while parsing
     if parseErr != nil {
-       return errorHandler(500, parseErr), parseErr
+       return errorHandler(500, parseErr.Error())
 
     //Also break if the X-F-F header doesn't match newIP
     } else if caller != newIP {
-        err := errors.New("Failed to Validate")
-	    return errorHandler(500, err), err
+	    return errorHandler(500, "Unable to validate")
     }
 
     //Here's where we actually make the update to R53
@@ -115,7 +111,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
     //If we get an error from the update itself, 
     //just do a general 500 and send the problem to the caller
     if err != nil {
-        return errorHandler(500, err), err
+        return errorHandler(500, err.Error())
     }
 
 	return events.APIGatewayProxyResponse{
