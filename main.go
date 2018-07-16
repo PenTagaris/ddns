@@ -87,18 +87,18 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
     //Break if we get an error while parsing
     if parseErr != nil {
-        return ErrorHandler(500, "Parsing Error", err), err
-    }
+        return ErrorHandler(500, "Parsing Error", parseErr), parseErr
+ 
     //Also break if the X-F-F header doesn't match newIP
-    else if caller != newIP {
-	    return ErrorHandler(500, "Failed to Validate", err), err
+    } else if caller != newIP {
+	    return ErrorHandler(500, "Failed to Validate", nil), nil
     }
 
     //Here's where we actually make the update to R53
     result, err := updateR53(newIP, hostedZone, targetURL)
 
     //Print out our body for testing purposes
-    fmt.Printf("Body from the request: %+v", body)
+    fmt.Printf("Body from the request: %+v", request.Body)
 
     //Log the result
     fmt.Printf("Result of the call %+v", result)
